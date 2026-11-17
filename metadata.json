@@ -1,0 +1,6 @@
+{
+  "name": "Interactive Periodic Table",
+  "description": "Offline bilingual (Arabic & English) interactive Periodic Table of Elements with dark/light mode, state and category filters, symbol etymology, top compounds, discovery history, and uses.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
