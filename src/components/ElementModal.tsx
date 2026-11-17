@@ -25,6 +25,7 @@ interface ElementModalProps {
   onAskAiElement: (element: ElementData) => void;
   onAskAiCompound: (element: ElementData, compound: Compound) => void;
   onCompareElement: (element: ElementData) => void;
+  suppressKeyboard?: boolean;
 }
 
 export const ElementModal: React.FC<ElementModalProps> = ({
@@ -35,6 +36,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
   onAskAiElement,
   onAskAiCompound,
   onCompareElement,
+  suppressKeyboard = false,
 }) => {
   const t = UI_TEXT[lang];
   const catMeta = CATEGORY_META[element.category];
@@ -44,6 +46,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
   const hasNext = element.number < 118;
 
   useEffect(() => {
+    if (suppressKeyboard) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
@@ -57,7 +60,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [element.number, hasNext, hasPrev, lang, onClose, onNavigate]);
+  }, [element.number, hasNext, hasPrev, lang, onClose, onNavigate, suppressKeyboard]);
 
   // Prevent background scrolling while modal is open
   useEffect(() => {

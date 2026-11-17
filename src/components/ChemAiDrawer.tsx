@@ -9,6 +9,7 @@ import {
   MessageSquare,
   AlertCircle,
   Loader2,
+  RotateCcw,
 } from 'lucide-react';
 import { Compound, ElementData, Language } from '../types/element';
 import { UI_TEXT } from '../data/i18n';
@@ -16,6 +17,7 @@ import { FormulaText } from './FormulaText';
 
 export interface AiContext {
   element?: ElementData;
+  comparedElement?: ElementData;
   compound?: Compound;
 }
 
@@ -140,33 +142,46 @@ export const ChemAiDrawer: React.FC<ChemAiDrawerProps> = ({
   const [mode, setMode] = useState<'grounded' | 'fast'>('grounded');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [failedPrompt, setFailedPrompt] = useState<string | null>(null);
 
   const threadEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const messagesRef = useRef<ChatMessage[]>(messages);
+  messagesRef.current = messages;
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading, error]);
 
   useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => inputRef.current?.focus(), 120);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
+    const timer = setTimeout(() => inputRef.current?.focus(), 120);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   const sendMessage = async (promptText: string, overrideMessages?: ChatMessage[]) => {
     const trimmed = promptText.trim();
     if (!trimmed || isLoading) return;
 
     setError(null);
+    setFailedPrompt(null);
     const userMsg: ChatMessage = {
       id: `u-${Date.now()}`,
       role: 'user',
       text: trimmed,
     };
 
-    const baseHistory = overrideMessages ?? messages;
+    const baseHistory = overrideMessages ?? messagesRef.current;
     const nextHistory = [...baseHistory, userMsg];
     setMessages(nextHistory);
     setInput('');
@@ -195,6 +210,19 @@ export const ChemAiDrawer: React.FC<ChemAiDrawerProps> = ({
                       electronConfig: context.element.electronConfig,
                     }
                   : undefined,
+                comparedElement: context.comparedElement
+                  ? {
+                      number: context.comparedElement.number,
+                      symbol: context.comparedElement.symbol,
+                      enName: context.comparedElement.enName,
+                      arName: context.comparedElement.arName,
+                      latinName: context.comparedElement.latinName,
+                      category: context.comparedElement.category,
+                      state: context.comparedElement.state,
+                      atomicMass: context.comparedElement.atomicMass,
+                      electronConfig: context.comparedElement.electronConfig,
+                    }
+                  : undefined,
                 compound: context.compound
                   ? {
                       formula: context.compound.formula,
@@ -207,7 +235,27 @@ export const ChemAiDrawer: React.FC<ChemAiDrawerProps> = ({
         }),
       });
 
-      const data = await res.json();
+      const rawBody = await res.text();
+      let data: { reply?: string; sources?: Array<{ title: string; uri: string }>; error?: string } = {};
+      if (rawBody) {
+        try {
+          data = JSON.parse(rawBody);
+        } catch {
+          if (!res.ok) {
+            throw new Error(
+              lang === 'ar'
+                ? `خطأ في الخادم (${res.status}). تأكد من تشغيل الخادم والاتصال بالإنترنت.`
+                : `Server error (${res.status}). Please verify the server is running and you are online.`
+            );
+          }
+          throw new Error(
+            lang === 'ar'
+              ? 'استجابة غير متوقعة من الخادم.'
+              : 'Unexpected non-JSON response from server.'
+          );
+        }
+      }
+
       if (!res.ok) {
         throw new Error(data?.error || `Request failed (${res.status})`);
       }
@@ -220,6 +268,9 @@ export const ChemAiDrawer: React.FC<ChemAiDrawerProps> = ({
       };
       setMessages((prev) => [...prev, modelMsg]);
     } catch (err: unknown) {
+      // Revert the unanswered user turn so chat alternation remains valid
+      setMessages(baseHistory);
+      setFailedPrompt(trimmed);
       const msg =
         err instanceof Error
           ? err.message
@@ -232,15 +283,15 @@ export const ChemAiDrawer: React.FC<ChemAiDrawerProps> = ({
     }
   };
 
-  // Auto-send pending prompt triggered from ElementModal / Compound button
+  // Auto-send pending prompt triggered from ElementModal / Compound / CompareView
   useEffect(() => {
-    if (isOpen && pendingPrompt) {
+    if (isOpen && pendingPrompt && !isLoading) {
       const promptToSend = pendingPrompt;
       onConsumePendingPrompt();
-      void sendMessage(promptToSend, messages);
+      void sendMessage(promptToSend, messagesRef.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, pendingPrompt]);
+  }, [isOpen, pendingPrompt, isLoading]);
 
   if (!isOpen) return null;
 
@@ -253,6 +304,16 @@ export const ChemAiDrawer: React.FC<ChemAiDrawerProps> = ({
       : [
           `Explain the bonding, structure, and properties of ${context.compound.enName} (${context.compound.formula})`,
           `How is ${context.compound.formula} synthesized and what are its safety precautions?`,
+        ]
+    : context?.element && context?.comparedElement
+    ? lang === 'ar'
+      ? [
+          `قارن بين ${context.element.arName} (${context.element.symbol}) و ${context.comparedElement.arName} (${context.comparedElement.symbol}) من حيث النشاط والروابط`,
+          `لماذا تختلف السالبية الكهربائية ودرجة الانصهار بين ${context.element.symbol} و ${context.comparedElement.symbol}؟`,
+        ]
+      : [
+          `Compare chemical reactivity and bonding between ${context.element.enName} (${context.element.symbol}) and ${context.comparedElement.enName} (${context.comparedElement.symbol})`,
+          `Why do electronegativity and melting points differ between ${context.element.symbol} and ${context.comparedElement.symbol}?`,
         ]
     : context?.element
     ? lang === 'ar'
@@ -368,6 +429,16 @@ export const ChemAiDrawer: React.FC<ChemAiDrawerProps> = ({
                     {' · '}
                     {lang === 'ar' ? context.compound.arName : context.compound.enName}
                   </>
+                ) : context.element && context.comparedElement ? (
+                  <>
+                    <strong className="font-mono-tabular text-sky-700 dark:text-sky-300">
+                      {context.element.symbol}
+                    </strong>
+                    {' vs '}
+                    <strong className="font-mono-tabular text-amber-700 dark:text-amber-300">
+                      {context.comparedElement.symbol}
+                    </strong>
+                  </>
                 ) : context.element ? (
                   <>
                     <strong className="font-mono-tabular text-sky-700 dark:text-sky-300">
@@ -473,9 +544,21 @@ export const ChemAiDrawer: React.FC<ChemAiDrawerProps> = ({
           )}
 
           {error && (
-            <div className="flex items-start gap-2.5 p-3 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-200 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{error}</span>
+            <div className="flex items-start justify-between gap-2.5 p-3 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-200 text-xs">
+              <div className="flex items-start gap-2 min-w-0">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span className="break-words">{error}</span>
+              </div>
+              {failedPrompt && (
+                <button
+                  type="button"
+                  onClick={() => void sendMessage(failedPrompt)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold shrink-0 cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>{lang === 'ar' ? 'إعادة المحاولة' : 'Retry'}</span>
+                </button>
+              )}
             </div>
           )}
 

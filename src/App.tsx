@@ -207,7 +207,7 @@ export default function App() {
   };
 
   const handleCompareWithAi = (a: ElementData, b: ElementData) => {
-    setAiContext({ element: a });
+    setAiContext({ element: a, comparedElement: b });
     setPendingPrompt(
       lang === 'ar'
         ? `قارن علمياً بين عنصر ${a.arName} (${a.symbol}, Z=${a.number}) وعنصر ${b.arName} (${b.symbol}, Z=${b.number}) من حيث الكتلة الذرية، السالبية الكهربائية، الحالة الفيزيائية عند ٢٥ °م، النشاط الكيميائي، وأبرز الاستخدامات.`
@@ -555,6 +555,7 @@ export default function App() {
           onAskAiElement={handleAskAiElement}
           onAskAiCompound={handleAskAiCompound}
           onCompareElement={handleSendToCompare}
+          suppressKeyboard={aiOpen}
         />
       )}
 
