@@ -7,10 +7,9 @@ import {
   History,
   Wrench,
   Atom,
-  MessageSquare,
   ArrowLeftRight,
 } from 'lucide-react';
-import { Compound, ElementData, Language } from '../types/element';
+import { ElementData, Language } from '../types/element';
 import { CATEGORY_META, STATE_META, UI_TEXT } from '../data/i18n';
 import { getSymbolHighlightSegments } from '../utils/etymology';
 import { StateIcon } from './StateIcon';
@@ -22,10 +21,7 @@ interface ElementModalProps {
   lang: Language;
   onClose: () => void;
   onNavigate: (atomicNumber: number) => void;
-  onAskAiElement: (element: ElementData) => void;
-  onAskAiCompound: (element: ElementData, compound: Compound) => void;
   onCompareElement: (element: ElementData) => void;
-  suppressKeyboard?: boolean;
 }
 
 export const ElementModal: React.FC<ElementModalProps> = ({
@@ -33,10 +29,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
   lang,
   onClose,
   onNavigate,
-  onAskAiElement,
-  onAskAiCompound,
   onCompareElement,
-  suppressKeyboard = false,
 }) => {
   const t = UI_TEXT[lang];
   const catMeta = CATEGORY_META[element.category];
@@ -46,7 +39,6 @@ export const ElementModal: React.FC<ElementModalProps> = ({
   const hasNext = element.number < 118;
 
   useEffect(() => {
-    if (suppressKeyboard) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
@@ -60,7 +52,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [element.number, hasNext, hasPrev, lang, onClose, onNavigate, suppressKeyboard]);
+  }, [element.number, hasNext, hasPrev, lang, onClose, onNavigate]);
 
   // Prevent background scrolling while modal is open
   useEffect(() => {
@@ -116,14 +108,6 @@ export const ElementModal: React.FC<ElementModalProps> = ({
             >
               <ArrowLeftRight className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
               <span className="hidden sm:inline">{t.compareButton}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onAskAiElement(element)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 hover:bg-sky-700 text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>{t.askAiElement}</span>
             </button>
             <button
               type="button"
@@ -385,18 +369,8 @@ export const ElementModal: React.FC<ElementModalProps> = ({
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <div className="px-2.5 py-1 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-sky-700 dark:text-sky-300">
-                      <FormulaText formula={comp.formula} />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => onAskAiCompound(element, comp)}
-                      className="px-2 py-1 rounded-md text-[11px] font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-300 hover:border-sky-400 dark:hover:border-sky-500 transition-colors cursor-pointer whitespace-nowrap"
-                      title={`${t.explainCompound} ${comp.formula}`}
-                    >
-                      {t.explainCompound}
-                    </button>
+                  <div className="px-2.5 py-1 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-sky-700 dark:text-sky-300 shrink-0">
+                    <FormulaText formula={comp.formula} />
                   </div>
                 </div>
               ))}

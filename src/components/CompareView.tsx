@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeftRight,
   ChevronDown,
-  MessageSquare,
   Search,
   ExternalLink,
 } from 'lucide-react';
@@ -20,7 +19,6 @@ interface CompareViewProps {
   onChangeB: (el: ElementData) => void;
   onSwap: () => void;
   onInspectElement: (el: ElementData) => void;
-  onCompareWithAi: (a: ElementData, b: ElementData) => void;
 }
 
 function parseNumericValue(raw: string): number | null {
@@ -214,7 +212,6 @@ export const CompareView: React.FC<CompareViewProps> = ({
   onChangeB,
   onSwap,
   onInspectElement,
-  onCompareWithAi,
 }) => {
   const t = UI_TEXT[lang];
 
@@ -470,14 +467,6 @@ export const CompareView: React.FC<CompareViewProps> = ({
               </button>
             );
           })}
-          <button
-            type="button"
-            onClick={() => onCompareWithAi(elementA, elementB)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 hover:bg-sky-700 text-white transition-colors cursor-pointer"
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>{t.compareWithAi}</span>
-          </button>
         </div>
       </div>
 

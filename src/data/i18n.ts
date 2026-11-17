@@ -184,21 +184,6 @@ export const UI_TEXT: Record<
     switchLang: string;
     stateLegendTitle: string;
     categoryLegendTitle: string;
-    aiButton: string;
-    aiTitle: string;
-    aiSubtitle: string;
-    aiModeGrounded: string;
-    aiModeFast: string;
-    aiClearChat: string;
-    aiClearContext: string;
-    aiWelcome: string;
-    aiSuggestions: string;
-    aiSourcesTitle: string;
-    aiThinking: string;
-    aiInputPlaceholder: string;
-    aiSend: string;
-    askAiElement: string;
-    explainCompound: string;
     compareView: string;
     compareTitle: string;
     compareSubtitle: string;
@@ -210,7 +195,6 @@ export const UI_TEXT: Record<
     compareDifference: string;
     compareSame: string;
     compareDifferent: string;
-    compareWithAi: string;
     compareSelectPlaceholder: string;
     compareButton: string;
   }
@@ -265,22 +249,6 @@ export const UI_TEXT: Record<
     switchLang: 'العربية',
     stateLegendTitle: 'State of Matter',
     categoryLegendTitle: 'Element Categories',
-    aiButton: 'Chemistry AI',
-    aiTitle: 'Chemistry AI Tutor',
-    aiSubtitle: 'Discuss any element, reaction, or chemical compound',
-    aiModeGrounded: 'Search Grounded',
-    aiModeFast: 'Fast',
-    aiClearChat: 'Clear',
-    aiClearContext: 'Clear focus',
-    aiWelcome:
-      'Ask about any element, periodic trend, chemical reaction, or compound (for example H2SO4, NaCl, or organic molecules). Search Grounded mode verifies facts with Google Search.',
-    aiSuggestions: 'Try asking:',
-    aiSourcesTitle: 'Google Search Sources',
-    aiThinking: 'Analyzing chemistry question...',
-    aiInputPlaceholder: 'Ask about an element or chemical compound (e.g., NaCl, Haber process)...',
-    aiSend: 'Send',
-    askAiElement: 'Ask AI',
-    explainCompound: 'Explain',
     compareView: 'Compare',
     compareTitle: 'Side-by-Side Element Comparison',
     compareSubtitle: 'Select any two elements to inspect atomic mass, electronegativity, state, and structural differences',
@@ -292,7 +260,6 @@ export const UI_TEXT: Record<
     compareDifference: 'Comparison',
     compareSame: 'Match',
     compareDifferent: 'Different',
-    compareWithAi: 'Compare with AI',
     compareSelectPlaceholder: 'Filter element by name, symbol, or Z...',
     compareButton: 'Compare',
   },
@@ -346,22 +313,6 @@ export const UI_TEXT: Record<
     switchLang: 'English',
     stateLegendTitle: 'حالة المادة',
     categoryLegendTitle: 'تصنيفات العناصر',
-    aiButton: 'مساعد الكيمياء',
-    aiTitle: 'مساعد الكيمياء الذكي',
-    aiSubtitle: 'ناقش أي عنصر أو تفاعل أو مركب كيميائي',
-    aiModeGrounded: 'بحث موثّق',
-    aiModeFast: 'سريع',
-    aiClearChat: 'مسح',
-    aiClearContext: 'إزالة التركيز',
-    aiWelcome:
-      'اسأل عن أي عنصر كيميائي أو اتجاه دوري أو مركب كيميائي (مثل H2SO4 أو NaCl أو المركبات العضوية). وضع البحث الموثّق يستعين ببحث Google للتحقق من المعلومات.',
-    aiSuggestions: 'جرّب أن تسأل:',
-    aiSourcesTitle: 'مصادر بحث Google',
-    aiThinking: 'جارٍ تحليل السؤال الكيميائي...',
-    aiInputPlaceholder: 'اسأل عن عنصر أو مركب كيميائي (مثل NaCl أو حمض الكبريتيك)...',
-    aiSend: 'إرسال',
-    askAiElement: 'اسأل الذكاء الاصطناعي',
-    explainCompound: 'شرح',
     compareView: 'مقارنة',
     compareTitle: 'مقارنة العناصر جنباً إلى جنب',
     compareSubtitle: 'اختر أي عنصرين لمقارنة الكتلة الذرية والسالبية الكهربائية والحالة والخصائص البنيوية',
@@ -373,7 +324,6 @@ export const UI_TEXT: Record<
     compareDifference: 'المقارنة',
     compareSame: 'متطابق',
     compareDifferent: 'مختلف',
-    compareWithAi: 'قارن بالذكاء الاصطناعي',
     compareSelectPlaceholder: 'ابحث بالاسم أو الرمز أو العدد الذري...',
     compareButton: 'مقارنة',
   },

@@ -8,13 +8,11 @@ import {
   Table2,
   X,
   RotateCcw,
-  MessageSquare,
   ArrowLeftRight,
 } from 'lucide-react';
 import { ALL_ELEMENTS } from './data/elements';
 import { CATEGORY_META, STATE_META, UI_TEXT } from './data/i18n';
 import {
-  Compound,
   ElementCategory,
   ElementData,
   Language,
@@ -24,7 +22,6 @@ import {
 import { StateIcon } from './components/StateIcon';
 import { PeriodicTableView } from './components/PeriodicTableView';
 import { ElementModal } from './components/ElementModal';
-import { AiContext, ChemAiDrawer } from './components/ChemAiDrawer';
 import { CompareView } from './components/CompareView';
 
 const CATEGORY_ORDER: ElementCategory[] = [
@@ -72,9 +69,6 @@ export default function App() {
   const [selectedElement, setSelectedElement] = useState<ElementData | null>(null);
   const [compareElementA, setCompareElementA] = useState<ElementData>(ALL_ELEMENTS[10]); // Na
   const [compareElementB, setCompareElementB] = useState<ElementData>(ALL_ELEMENTS[18]); // K
-  const [aiOpen, setAiOpen] = useState(false);
-  const [aiContext, setAiContext] = useState<AiContext | null>(null);
-  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
 
   const t = UI_TEXT[lang];
 
@@ -166,32 +160,6 @@ export default function App() {
     if (found) setSelectedElement(found);
   };
 
-  const handleOpenAiGeneral = () => {
-    setAiContext(selectedElement ? { element: selectedElement } : null);
-    setPendingPrompt(null);
-    setAiOpen(true);
-  };
-
-  const handleAskAiElement = (element: ElementData) => {
-    setAiContext({ element });
-    setPendingPrompt(
-      lang === 'ar'
-        ? `قدّم شرحاً علمياً وافياً لعنصر ${element.arName} (${element.enName}, ${element.symbol}) يشمل خصائصه المميزة، نشاطه الكيميائي، وتفاعلاته الشائعة.`
-        : `Explain ${element.enName} (${element.symbol}, Z=${element.number}): its defining periodic properties, reactivity, electron behavior, and real-world chemistry.`
-    );
-    setAiOpen(true);
-  };
-
-  const handleAskAiCompound = (element: ElementData, compound: Compound) => {
-    setAiContext({ element, compound });
-    setPendingPrompt(
-      lang === 'ar'
-        ? `اشرح المركب الكيميائي ${compound.arName} (${compound.enName}, ${compound.formula}): نوع الروابط الكيميائية، البنية، الخواص الفيزيائية والكيميائية، وأبرز استخداماته.`
-        : `Explain the chemical compound ${compound.enName} (${compound.formula}): its bonding, molecular/crystal structure, key properties, preparation, and primary uses.`
-    );
-    setAiOpen(true);
-  };
-
   const handleSwapCompare = () => {
     setCompareElementA(compareElementB);
     setCompareElementB(compareElementA);
@@ -204,16 +172,6 @@ export default function App() {
     }
     setSelectedElement(null);
     setViewMode('compare');
-  };
-
-  const handleCompareWithAi = (a: ElementData, b: ElementData) => {
-    setAiContext({ element: a, comparedElement: b });
-    setPendingPrompt(
-      lang === 'ar'
-        ? `قارن علمياً بين عنصر ${a.arName} (${a.symbol}, Z=${a.number}) وعنصر ${b.arName} (${b.symbol}, Z=${b.number}) من حيث الكتلة الذرية، السالبية الكهربائية، الحالة الفيزيائية عند ٢٥ °م، النشاط الكيميائي، وأبرز الاستخدامات.`
-        : `Compare ${a.enName} (${a.symbol}, Z=${a.number}) and ${b.enName} (${b.symbol}, Z=${b.number}): contrast their atomic mass, electronegativity, state at 25 °C, electron configuration, reactivity, and key practical uses.`
-    );
-    setAiOpen(true);
   };
 
   return (
@@ -269,16 +227,8 @@ export default function App() {
             </button>
           </nav>
 
-          {/* Right Controls: AI Tutor, Language & Theme */}
+          {/* Right Controls: Language & Theme */}
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleOpenAiGeneral}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-sky-600 hover:bg-sky-700 text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>{t.aiButton}</span>
-            </button>
 
             <button
               type="button"
@@ -367,7 +317,6 @@ export default function App() {
               onChangeB={setCompareElementB}
               onSwap={handleSwapCompare}
               onInspectElement={setSelectedElement}
-              onCompareWithAi={handleCompareWithAi}
             />
           </section>
         ) : (
@@ -552,23 +501,9 @@ export default function App() {
           lang={lang}
           onClose={() => setSelectedElement(null)}
           onNavigate={handleNavigateElement}
-          onAskAiElement={handleAskAiElement}
-          onAskAiCompound={handleAskAiCompound}
           onCompareElement={handleSendToCompare}
-          suppressKeyboard={aiOpen}
         />
       )}
-
-      {/* Chemistry AI Chat Drawer */}
-      <ChemAiDrawer
-        isOpen={aiOpen}
-        lang={lang}
-        context={aiContext}
-        pendingPrompt={pendingPrompt}
-        onConsumePendingPrompt={() => setPendingPrompt(null)}
-        onClearContext={() => setAiContext(null)}
-        onClose={() => setAiOpen(false)}
-      />
     </div>
   );
 }
