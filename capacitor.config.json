@@ -1,0 +1,9 @@
+{
+  "appId": "com.periodictable.bilingual",
+  "appName": "Periodic Table",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

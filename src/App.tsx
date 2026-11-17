@@ -8,13 +8,22 @@ import {
   Table2,
   X,
   RotateCcw,
+  MessageSquare,
 } from 'lucide-react';
 import { ALL_ELEMENTS } from './data/elements';
 import { CATEGORY_META, STATE_META, UI_TEXT } from './data/i18n';
-import { ElementCategory, ElementData, Language, MatterState, Theme } from './types/element';
+import {
+  Compound,
+  ElementCategory,
+  ElementData,
+  Language,
+  MatterState,
+  Theme,
+} from './types/element';
 import { StateIcon } from './components/StateIcon';
 import { PeriodicTableView } from './components/PeriodicTableView';
 import { ElementModal } from './components/ElementModal';
+import { AiContext, ChemAiDrawer } from './components/ChemAiDrawer';
 
 const CATEGORY_ORDER: ElementCategory[] = [
   'alkali-metal',
@@ -59,6 +68,9 @@ export default function App() {
   const [categoryFilter, setCategoryFilter] = useState<ElementCategory | 'all'>('all');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [selectedElement, setSelectedElement] = useState<ElementData | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiContext, setAiContext] = useState<AiContext | null>(null);
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
 
   const t = UI_TEXT[lang];
 
@@ -150,6 +162,32 @@ export default function App() {
     if (found) setSelectedElement(found);
   };
 
+  const handleOpenAiGeneral = () => {
+    setAiContext(selectedElement ? { element: selectedElement } : null);
+    setPendingPrompt(null);
+    setAiOpen(true);
+  };
+
+  const handleAskAiElement = (element: ElementData) => {
+    setAiContext({ element });
+    setPendingPrompt(
+      lang === 'ar'
+        ? `قدّم شرحاً علمياً وافياً لعنصر ${element.arName} (${element.enName}, ${element.symbol}) يشمل خصائصه المميزة، نشاطه الكيميائي، وتفاعلاته الشائعة.`
+        : `Explain ${element.enName} (${element.symbol}, Z=${element.number}): its defining periodic properties, reactivity, electron behavior, and real-world chemistry.`
+    );
+    setAiOpen(true);
+  };
+
+  const handleAskAiCompound = (element: ElementData, compound: Compound) => {
+    setAiContext({ element, compound });
+    setPendingPrompt(
+      lang === 'ar'
+        ? `اشرح المركب الكيميائي ${compound.arName} (${compound.enName}, ${compound.formula}): نوع الروابط الكيميائية، البنية، الخواص الفيزيائية والكيميائية، وأبرز استخداماته.`
+        : `Explain the chemical compound ${compound.enName} (${compound.formula}): its bonding, molecular/crystal structure, key properties, preparation, and primary uses.`
+    );
+    setAiOpen(true);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#070b12] text-slate-900 dark:text-slate-100 transition-colors">
       {/* Top Bar */}
@@ -191,8 +229,17 @@ export default function App() {
             </button>
           </nav>
 
-          {/* Right Controls: Language & Theme */}
+          {/* Right Controls: AI Tutor, Language & Theme */}
           <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleOpenAiGeneral}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-sky-600 hover:bg-sky-700 text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>{t.aiButton}</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setLang((prev) => (prev === 'en' ? 'ar' : 'en'))}
@@ -433,8 +480,21 @@ export default function App() {
           lang={lang}
           onClose={() => setSelectedElement(null)}
           onNavigate={handleNavigateElement}
+          onAskAiElement={handleAskAiElement}
+          onAskAiCompound={handleAskAiCompound}
         />
       )}
+
+      {/* Chemistry AI Chat Drawer */}
+      <ChemAiDrawer
+        isOpen={aiOpen}
+        lang={lang}
+        context={aiContext}
+        pendingPrompt={pendingPrompt}
+        onConsumePendingPrompt={() => setPendingPrompt(null)}
+        onClearContext={() => setAiContext(null)}
+        onClose={() => setAiOpen(false)}
+      />
     </div>
   );
 }
