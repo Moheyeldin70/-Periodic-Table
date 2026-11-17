@@ -9,6 +9,7 @@ import {
   X,
   RotateCcw,
   MessageSquare,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { ALL_ELEMENTS } from './data/elements';
 import { CATEGORY_META, STATE_META, UI_TEXT } from './data/i18n';
@@ -24,6 +25,7 @@ import { StateIcon } from './components/StateIcon';
 import { PeriodicTableView } from './components/PeriodicTableView';
 import { ElementModal } from './components/ElementModal';
 import { AiContext, ChemAiDrawer } from './components/ChemAiDrawer';
+import { CompareView } from './components/CompareView';
 
 const CATEGORY_ORDER: ElementCategory[] = [
   'alkali-metal',
@@ -66,8 +68,10 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [stateFilter, setStateFilter] = useState<MatterState | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState<ElementCategory | 'all'>('all');
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'grid' | 'compare'>('table');
   const [selectedElement, setSelectedElement] = useState<ElementData | null>(null);
+  const [compareElementA, setCompareElementA] = useState<ElementData>(ALL_ELEMENTS[10]); // Na
+  const [compareElementB, setCompareElementB] = useState<ElementData>(ALL_ELEMENTS[18]); // K
   const [aiOpen, setAiOpen] = useState(false);
   const [aiContext, setAiContext] = useState<AiContext | null>(null);
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
@@ -188,6 +192,30 @@ export default function App() {
     setAiOpen(true);
   };
 
+  const handleSwapCompare = () => {
+    setCompareElementA(compareElementB);
+    setCompareElementB(compareElementA);
+  };
+
+  const handleSendToCompare = (el: ElementData) => {
+    if (el.number !== compareElementA.number) {
+      setCompareElementB(compareElementA);
+      setCompareElementA(el);
+    }
+    setSelectedElement(null);
+    setViewMode('compare');
+  };
+
+  const handleCompareWithAi = (a: ElementData, b: ElementData) => {
+    setAiContext({ element: a });
+    setPendingPrompt(
+      lang === 'ar'
+        ? `قارن علمياً بين عنصر ${a.arName} (${a.symbol}, Z=${a.number}) وعنصر ${b.arName} (${b.symbol}, Z=${b.number}) من حيث الكتلة الذرية، السالبية الكهربائية، الحالة الفيزيائية عند ٢٥ °م، النشاط الكيميائي، وأبرز الاستخدامات.`
+        : `Compare ${a.enName} (${a.symbol}, Z=${a.number}) and ${b.enName} (${b.symbol}, Z=${b.number}): contrast their atomic mass, electronegativity, state at 25 °C, electron configuration, reactivity, and key practical uses.`
+    );
+    setAiOpen(true);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#070b12] text-slate-900 dark:text-slate-100 transition-colors">
       {/* Top Bar */}
@@ -226,6 +254,18 @@ export default function App() {
             >
               <LayoutGrid className="w-4 h-4" />
               <span>{t.gridView}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('compare')}
+              className={`inline-flex items-center gap-1.5 py-1 border-b-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                viewMode === 'compare'
+                  ? 'border-sky-600 dark:border-sky-400 text-slate-900 dark:text-white'
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <ArrowLeftRight className="w-4 h-4" />
+              <span>{t.compareView}</span>
             </button>
           </nav>
 
@@ -274,191 +314,223 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-1 max-w-[1520px] w-full mx-auto px-4 sm:px-6 py-5 sm:py-6 space-y-5">
-        {/* Workspace Toolbar: Search + State Filter + Mobile View Toggle */}
-        <section className="space-y-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            {/* Search Input */}
-            <div className="relative flex-1 max-w-xl">
-              <Search
-                className={`w-4 h-4 text-slate-400 absolute top-1/2 -translate-y-1/2 pointer-events-none ${
-                  lang === 'ar' ? 'right-3.5' : 'left-3.5'
-                }`}
-              />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t.searchPlaceholder}
-                className={`w-full py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-colors ${
-                  lang === 'ar' ? 'pr-10 pl-9' : 'pl-10 pr-9'
-                }`}
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className={`absolute top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer ${
-                    lang === 'ar' ? 'left-2.5' : 'right-2.5'
-                  }`}
-                  aria-label="Clear search"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
+        {/* Mobile View Switcher (always accessible on small screens) */}
+        <div className="flex sm:hidden items-center justify-between gap-2">
+          <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-slate-200/70 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-800 w-full">
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              className={`flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer whitespace-nowrap ${
+                viewMode === 'table'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              <Table2 className="w-3.5 h-3.5" />
+              <span>{t.tableView}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer whitespace-nowrap ${
+                viewMode === 'grid'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>{t.gridView}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('compare')}
+              className={`flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer whitespace-nowrap ${
+                viewMode === 'compare'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              <ArrowLeftRight className="w-3.5 h-3.5" />
+              <span>{t.compareView}</span>
+            </button>
+          </div>
+        </div>
 
-            {/* State of Matter Segmented Control + Mobile View Switch */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              <div
-                role="group"
-                aria-label={t.stateLegendTitle}
-                className="inline-flex items-center gap-1 p-1 rounded-xl bg-slate-200/70 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-800"
-              >
-                <button
-                  type="button"
-                  onClick={() => setStateFilter('all')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                    stateFilter === 'all'
-                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`}
-                >
-                  {t.allStates}
-                </button>
-                {STATE_ORDER.map((st) => {
-                  const meta = STATE_META[st];
-                  const active = stateFilter === st;
-                  return (
+        {viewMode === 'compare' ? (
+          <section aria-label={t.compareTitle}>
+            <CompareView
+              elements={ALL_ELEMENTS}
+              elementA={compareElementA}
+              elementB={compareElementB}
+              lang={lang}
+              onChangeA={setCompareElementA}
+              onChangeB={setCompareElementB}
+              onSwap={handleSwapCompare}
+              onInspectElement={setSelectedElement}
+              onCompareWithAi={handleCompareWithAi}
+            />
+          </section>
+        ) : (
+          <>
+            {/* Workspace Toolbar: Search + State Filter */}
+            <section className="space-y-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                {/* Search Input */}
+                <div className="relative flex-1 max-w-xl">
+                  <Search
+                    className={`w-4 h-4 text-slate-400 absolute top-1/2 -translate-y-1/2 pointer-events-none ${
+                      lang === 'ar' ? 'right-3.5' : 'left-3.5'
+                    }`}
+                  />
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={t.searchPlaceholder}
+                    className={`w-full py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-colors ${
+                      lang === 'ar' ? 'pr-10 pl-9' : 'pl-10 pr-9'
+                    }`}
+                  />
+                  {searchQuery && (
                     <button
-                      key={st}
                       type="button"
-                      onClick={() => setStateFilter((prev) => (prev === st ? 'all' : st))}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                        active
+                      onClick={() => setSearchQuery('')}
+                      className={`absolute top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer ${
+                        lang === 'ar' ? 'left-2.5' : 'right-2.5'
+                      }`}
+                      aria-label="Clear search"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* State of Matter Segmented Control */}
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div
+                    role="group"
+                    aria-label={t.stateLegendTitle}
+                    className="inline-flex items-center gap-1 p-1 rounded-xl bg-slate-200/70 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-800"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setStateFilter('all')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                        stateFilter === 'all'
                           ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
                           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                       }`}
                     >
-                      <StateIcon state={st} className={`w-3.5 h-3.5 ${meta.textClass}`} />
+                      {t.allStates}
+                    </button>
+                    {STATE_ORDER.map((st) => {
+                      const meta = STATE_META[st];
+                      const active = stateFilter === st;
+                      return (
+                        <button
+                          key={st}
+                          type="button"
+                          onClick={() => setStateFilter((prev) => (prev === st ? 'all' : st))}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                            active
+                              ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                          }`}
+                        >
+                          <StateIcon state={st} className={`w-3.5 h-3.5 ${meta.textClass}`} />
+                          <span>{lang === 'ar' ? meta.ar : meta.en}</span>
+                          <span className="font-mono-tabular text-[11px] opacity-60">
+                            {stateCounts[st]}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Interactive Category Legend & Filter Bar */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilter('all')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    categoryFilter === 'all'
+                      ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600'
+                  }`}
+                >
+                  {t.allCategories}
+                </button>
+
+                {CATEGORY_ORDER.map((catId) => {
+                  const meta = CATEGORY_META[catId];
+                  const isActive = categoryFilter === catId;
+                  return (
+                    <button
+                      key={catId}
+                      type="button"
+                      onClick={() => handleToggleCategory(catId)}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                        isActive
+                          ? meta.badgeClasses
+                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                      }`}
+                    >
+                      <span
+                        className={`w-2.5 h-2.5 rounded-sm shrink-0 ${meta.swatchClass}`}
+                        aria-hidden="true"
+                      />
                       <span>{lang === 'ar' ? meta.ar : meta.en}</span>
                       <span className="font-mono-tabular text-[11px] opacity-60">
-                        {stateCounts[st]}
+                        {categoryCounts[catId]}
                       </span>
                     </button>
                   );
                 })}
               </div>
 
-              {/* Mobile View Switch */}
-              <div className="flex sm:hidden items-center gap-1 p-1 rounded-xl bg-slate-200/70 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setViewMode('table')}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer ${
-                    viewMode === 'table'
-                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400'
-                  }`}
-                  aria-label={t.tableView}
-                >
-                  <Table2 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('grid')}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer ${
-                    viewMode === 'grid'
-                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400'
-                  }`}
-                  aria-label={t.gridView}
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Interactive Category Legend & Filter Bar */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setCategoryFilter('all')}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                categoryFilter === 'all'
-                  ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600'
-              }`}
-            >
-              {t.allCategories}
-            </button>
-
-            {CATEGORY_ORDER.map((catId) => {
-              const meta = CATEGORY_META[catId];
-              const isActive = categoryFilter === catId;
-              return (
-                <button
-                  key={catId}
-                  type="button"
-                  onClick={() => handleToggleCategory(catId)}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                    isActive
-                      ? meta.badgeClasses
-                      : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                  }`}
-                >
-                  <span
-                    className={`w-2.5 h-2.5 rounded-sm shrink-0 ${meta.swatchClass}`}
-                    aria-hidden="true"
-                  />
-                  <span>{lang === 'ar' ? meta.ar : meta.en}</span>
-                  <span className="font-mono-tabular text-[11px] opacity-60">
-                    {categoryCounts[catId]}
+              {/* Quiet Status / Metadata Row */}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400 pt-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span>
+                    {t.showingCount}{' '}
+                    <strong className="font-mono-tabular text-slate-800 dark:text-slate-200">
+                      {matchedNumbers.size}
+                    </strong>{' '}
+                    {t.ofElements}
                   </span>
-                </button>
-              );
-            })}
-          </div>
+                  <span aria-hidden="true">·</span>
+                  <span>{t.roomTempNote}</span>
+                </div>
 
-          {/* Quiet Status / Metadata Row */}
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400 pt-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span>
-                {t.showingCount}{' '}
-                <strong className="font-mono-tabular text-slate-800 dark:text-slate-200">
-                  {matchedNumbers.size}
-                </strong>{' '}
-                {t.ofElements}
-              </span>
-              <span aria-hidden="true">·</span>
-              <span>{t.roomTempNote}</span>
-            </div>
+                {hasActiveFilter && (
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>{t.clearFilters}</span>
+                  </button>
+                )}
+              </div>
+            </section>
 
-            {hasActiveFilter && (
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="inline-flex items-center gap-1 text-xs font-medium text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>{t.clearFilters}</span>
-              </button>
-            )}
-          </div>
-        </section>
-
-        {/* Periodic Table or Index Grid */}
-        <section aria-label={t.appTitle}>
-          <PeriodicTableView
-            elements={ALL_ELEMENTS}
-            matchedNumbers={matchedNumbers}
-            selectedElement={selectedElement}
-            lang={lang}
-            viewMode={viewMode}
-            onSelectElement={setSelectedElement}
-            onSelectCategory={handleToggleCategory}
-          />
-        </section>
+            {/* Periodic Table or Index Grid */}
+            <section aria-label={t.appTitle}>
+              <PeriodicTableView
+                elements={ALL_ELEMENTS}
+                matchedNumbers={matchedNumbers}
+                selectedElement={selectedElement}
+                lang={lang}
+                viewMode={viewMode}
+                onSelectElement={setSelectedElement}
+                onSelectCategory={handleToggleCategory}
+              />
+            </section>
+          </>
+        )}
       </main>
 
       {/* Footer */}
@@ -482,6 +554,7 @@ export default function App() {
           onNavigate={handleNavigateElement}
           onAskAiElement={handleAskAiElement}
           onAskAiCompound={handleAskAiCompound}
+          onCompareElement={handleSendToCompare}
         />
       )}
 

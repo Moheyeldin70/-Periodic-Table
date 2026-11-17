@@ -199,6 +199,20 @@ export const UI_TEXT: Record<
     aiSend: string;
     askAiElement: string;
     explainCompound: string;
+    compareView: string;
+    compareTitle: string;
+    compareSubtitle: string;
+    compareElementA: string;
+    compareElementB: string;
+    compareSwap: string;
+    comparePresets: string;
+    compareProperty: string;
+    compareDifference: string;
+    compareSame: string;
+    compareDifferent: string;
+    compareWithAi: string;
+    compareSelectPlaceholder: string;
+    compareButton: string;
   }
 > = {
   en: {
@@ -267,6 +281,20 @@ export const UI_TEXT: Record<
     aiSend: 'Send',
     askAiElement: 'Ask AI',
     explainCompound: 'Explain',
+    compareView: 'Compare',
+    compareTitle: 'Side-by-Side Element Comparison',
+    compareSubtitle: 'Select any two elements to inspect atomic mass, electronegativity, state, and structural differences',
+    compareElementA: 'First Element',
+    compareElementB: 'Second Element',
+    compareSwap: 'Swap elements',
+    comparePresets: 'Quick pairs',
+    compareProperty: 'Property',
+    compareDifference: 'Comparison',
+    compareSame: 'Match',
+    compareDifferent: 'Different',
+    compareWithAi: 'Compare with AI',
+    compareSelectPlaceholder: 'Filter element by name, symbol, or Z...',
+    compareButton: 'Compare',
   },
   ar: {
     appTitle: 'الجدول الدوري للعناصر',
@@ -334,5 +362,19 @@ export const UI_TEXT: Record<
     aiSend: 'إرسال',
     askAiElement: 'اسأل الذكاء الاصطناعي',
     explainCompound: 'شرح',
+    compareView: 'مقارنة',
+    compareTitle: 'مقارنة العناصر جنباً إلى جنب',
+    compareSubtitle: 'اختر أي عنصرين لمقارنة الكتلة الذرية والسالبية الكهربائية والحالة والخصائص البنيوية',
+    compareElementA: 'العنصر الأول',
+    compareElementB: 'العنصر الثاني',
+    compareSwap: 'تبديل العنصرين',
+    comparePresets: 'مقارنات سريعة',
+    compareProperty: 'الخاصية',
+    compareDifference: 'المقارنة',
+    compareSame: 'متطابق',
+    compareDifferent: 'مختلف',
+    compareWithAi: 'قارن بالذكاء الاصطناعي',
+    compareSelectPlaceholder: 'ابحث بالاسم أو الرمز أو العدد الذري...',
+    compareButton: 'مقارنة',
   },
 };

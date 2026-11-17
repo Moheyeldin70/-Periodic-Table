@@ -8,6 +8,7 @@ import {
   Wrench,
   Atom,
   MessageSquare,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { Compound, ElementData, Language } from '../types/element';
 import { CATEGORY_META, STATE_META, UI_TEXT } from '../data/i18n';
@@ -23,6 +24,7 @@ interface ElementModalProps {
   onNavigate: (atomicNumber: number) => void;
   onAskAiElement: (element: ElementData) => void;
   onAskAiCompound: (element: ElementData, compound: Compound) => void;
+  onCompareElement: (element: ElementData) => void;
 }
 
 export const ElementModal: React.FC<ElementModalProps> = ({
@@ -32,6 +34,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
   onNavigate,
   onAskAiElement,
   onAskAiCompound,
+  onCompareElement,
 }) => {
   const t = UI_TEXT[lang];
   const catMeta = CATEGORY_META[element.category];
@@ -103,6 +106,14 @@ export const ElementModal: React.FC<ElementModalProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => onCompareElement(element)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              <ArrowLeftRight className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+              <span className="hidden sm:inline">{t.compareButton}</span>
+            </button>
             <button
               type="button"
               onClick={() => onAskAiElement(element)}
