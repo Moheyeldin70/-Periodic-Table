@@ -187,8 +187,11 @@ export const ChemAiDrawer: React.FC<ChemAiDrawerProps> = ({
     setInput('');
     setIsLoading(true);
 
+    const apiBase = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
+    const chatUrl = `${apiBase}/api/chat`;
+
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch(chatUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -235,7 +238,22 @@ export const ChemAiDrawer: React.FC<ChemAiDrawerProps> = ({
         }),
       });
 
+      const contentType = res.headers.get('content-type') || '';
       const rawBody = await res.text();
+      const trimmedBody = rawBody.trimStart().toLowerCase();
+      const looksLikeHtml =
+        contentType.includes('text/html') ||
+        trimmedBody.startsWith('<!doctype') ||
+        trimmedBody.startsWith('<html');
+
+      if (looksLikeHtml) {
+        throw new Error(
+          lang === 'ar'
+            ? 'يتطلب مساعد الكيمياء خادماً متصلًا بالإنترنت. في نسخة التطبيق المستقلة (APK) لم يتم ضبط عنوان الخادم (VITE_API_BASE_URL) عند البناء — أضفه في متغيرات GitHub Actions وأعد البناء، أو استخدم نسخة الويب الحية.'
+            : 'Chemistry AI requires a connected backend server. This standalone APK build does not have a server URL configured (VITE_API_BASE_URL). Set VITE_API_BASE_URL in GitHub Actions variables before building the APK, or use the live web app.'
+        );
+      }
+
       let data: { reply?: string; sources?: Array<{ title: string; uri: string }>; error?: string } = {};
       if (rawBody) {
         try {
