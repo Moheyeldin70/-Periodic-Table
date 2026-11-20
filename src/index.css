@@ -5,6 +5,10 @@
   :root {
     --font-sans: 'Plus Jakarta Sans', 'Avenir Next', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-arabic: 'IBM Plex Sans Arabic', 'Noto Sans Arabic', 'Geeza Pro', 'Tahoma', system-ui, sans-serif;
+    --font-ja: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', 'Meiryo', sans-serif;
+    --font-zh: 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif;
+    --font-ko: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+    --font-hi: 'Noto Sans Devanagari', 'Kohinoor Devanagari', 'Mangal', sans-serif;
     --font-mono: 'JetBrains Mono', 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 
@@ -16,6 +20,22 @@
 
   html[lang="ar"] {
     font-family: var(--font-arabic);
+  }
+
+  html[lang="ja"] {
+    font-family: var(--font-ja);
+  }
+
+  html[lang="zh"] {
+    font-family: var(--font-zh);
+  }
+
+  html[lang="ko"] {
+    font-family: var(--font-ko);
+  }
+
+  html[lang="hi"] {
+    font-family: var(--font-hi);
   }
 
   body {

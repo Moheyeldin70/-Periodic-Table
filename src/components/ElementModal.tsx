@@ -12,6 +12,7 @@ import {
 import { ElementData, Language } from '../types/element';
 import { CATEGORY_META, STATE_META, UI_TEXT } from '../data/i18n';
 import { getSymbolHighlightSegments } from '../utils/etymology';
+import { getLocalizedElement } from '../utils/localization';
 import { StateIcon } from './StateIcon';
 import { FormulaText } from './FormulaText';
 import { BohrModelSvg } from './BohrModelSvg';
@@ -34,6 +35,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
   const t = UI_TEXT[lang];
   const catMeta = CATEGORY_META[element.category];
   const stateMeta = STATE_META[element.state];
+  const loc = getLocalizedElement(element, lang);
 
   const hasPrev = element.number > 1;
   const hasNext = element.number < 118;
@@ -44,10 +46,10 @@ export const ElementModal: React.FC<ElementModalProps> = ({
         onClose();
       } else if (e.key === 'ArrowLeft') {
         if (lang === 'ar' && hasNext) onNavigate(element.number + 1);
-        else if (lang === 'en' && hasPrev) onNavigate(element.number - 1);
+        else if (lang !== 'ar' && hasPrev) onNavigate(element.number - 1);
       } else if (e.key === 'ArrowRight') {
         if (lang === 'ar' && hasPrev) onNavigate(element.number - 1);
-        else if (lang === 'en' && hasNext) onNavigate(element.number + 1);
+        else if (lang !== 'ar' && hasNext) onNavigate(element.number + 1);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -91,12 +93,12 @@ export const ElementModal: React.FC<ElementModalProps> = ({
             </span>
             <span aria-hidden="true">·</span>
             <span className="truncate font-medium">
-              {lang === 'ar' ? catMeta.ar : catMeta.en}
+              {catMeta.names[lang]}
             </span>
             <span aria-hidden="true">·</span>
             <span className={`inline-flex items-center gap-1 font-medium ${stateMeta.textClass}`}>
               <StateIcon state={element.state} className="w-3.5 h-3.5" />
-              <span>{lang === 'ar' ? stateMeta.ar : stateMeta.en}</span>
+              <span>{stateMeta.names[lang]}</span>
             </span>
           </div>
 
@@ -166,38 +168,61 @@ export const ElementModal: React.FC<ElementModalProps> = ({
                 </div>
               </div>
 
-              {/* Names Block: Arabic, English, Latin */}
+              {/* Names Block: Localized, English/Arabic, Latin */}
               <div className="min-w-0 flex-1 space-y-3">
                 <div>
                   <h2
                     id="element-modal-title"
                     className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50"
                   >
-                    {lang === 'ar' ? element.arName : element.enName}
+                    {loc.name}
                   </h2>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                    {lang === 'ar' ? element.enName : element.arName}
+                    {loc.secondaryName}
                   </p>
                 </div>
 
                 {/* 3-Language Name Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                  <div className="border-t border-slate-200 dark:border-slate-800 pt-2">
-                    <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                      {t.arabicName}
-                    </div>
-                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 mt-0.5">
-                      {element.arName}
-                    </div>
-                  </div>
-                  <div className="border-t border-slate-200 dark:border-slate-800 pt-2">
-                    <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                      {t.englishName}
-                    </div>
-                    <div dir="ltr" className="text-sm font-semibold text-slate-900 dark:text-slate-100 mt-0.5 text-start">
-                      {element.enName}
-                    </div>
-                  </div>
+                  {lang === 'en' ? (
+                    <>
+                      <div className="border-t border-slate-200 dark:border-slate-800 pt-2">
+                        <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                          {t.englishName}
+                        </div>
+                        <div dir="ltr" className="text-sm font-semibold text-slate-900 dark:text-slate-100 mt-0.5 text-start">
+                          {element.enName}
+                        </div>
+                      </div>
+                      <div className="border-t border-slate-200 dark:border-slate-800 pt-2">
+                        <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                          Arabic (العربية)
+                        </div>
+                        <div dir="rtl" className="text-sm font-semibold text-slate-900 dark:text-slate-100 mt-0.5 text-start">
+                          {element.arName}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="border-t border-slate-200 dark:border-slate-800 pt-2">
+                        <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                          {t.localNameLabel}
+                        </div>
+                        <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 mt-0.5">
+                          {loc.name}
+                        </div>
+                      </div>
+                      <div className="border-t border-slate-200 dark:border-slate-800 pt-2">
+                        <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                          {t.englishName}
+                        </div>
+                        <div dir="ltr" className="text-sm font-semibold text-slate-900 dark:text-slate-100 mt-0.5 text-start">
+                          {element.enName}
+                        </div>
+                      </div>
+                    </>
+                  )}
                   <div className="border-t border-slate-200 dark:border-slate-800 pt-2">
                     <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
                       {t.latinName}
@@ -292,7 +317,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
             </div>
 
             <p className="mt-3 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-              {lang === 'ar' ? element.etymologyAr : element.etymologyEn}
+              {loc.etymology}
             </p>
           </section>
 
@@ -351,7 +376,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {element.compounds.slice(0, 10).map((comp, index) => (
+              {loc.compounds.slice(0, 10).map((comp, index) => (
                 <div
                   key={`${comp.formula}-${index}`}
                   className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/35"
@@ -362,10 +387,10 @@ export const ElementModal: React.FC<ElementModalProps> = ({
                     </span>
                     <div className="min-w-0">
                       <div className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-                        {lang === 'ar' ? comp.arName : comp.enName}
+                        {comp.name}
                       </div>
                       <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                        {lang === 'ar' ? comp.enName : comp.arName}
+                        {comp.secondaryName}
                       </div>
                     </div>
                   </div>
@@ -399,13 +424,13 @@ export const ElementModal: React.FC<ElementModalProps> = ({
                 <span>
                   {t.discoveredBy}:{' '}
                   <strong className="text-slate-800 dark:text-slate-200">
-                    {lang === 'ar' ? element.discoveredByAr : element.discoveredByEn}
+                    {loc.discoveredBy}
                   </strong>
                 </span>
               </div>
 
               <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-                {lang === 'ar' ? element.historyAr : element.historyEn}
+                {loc.history}
               </p>
             </section>
 
@@ -419,7 +444,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
               </div>
 
               <ul className="space-y-2 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-                {(lang === 'ar' ? element.usesAr : element.usesEn).map((use, idx) => (
+                {loc.uses.map((use, idx) => (
                   <li key={idx} className="flex items-start gap-2.5">
                     <span
                       aria-hidden="true"

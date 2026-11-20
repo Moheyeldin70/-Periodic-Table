@@ -112,8 +112,11 @@ export const PeriodicTableView: React.FC<PeriodicTableViewProps> = ({
             title={t.lanthanidesSeries}
           >
             <span className="font-mono-tabular text-[10px] font-bold">57–71</span>
-            <span className="text-[9px] font-medium mt-0.5 text-center leading-tight">
-              {lang === 'ar' ? 'لانثانيدات' : 'La–Lu'}
+            <span
+              dir={lang === 'ar' ? 'rtl' : 'ltr'}
+              className="text-[9px] font-medium mt-0.5 text-center leading-tight"
+            >
+              {t.lanthanidesShort}
             </span>
           </button>
 
@@ -126,8 +129,11 @@ export const PeriodicTableView: React.FC<PeriodicTableViewProps> = ({
             title={t.actinidesSeries}
           >
             <span className="font-mono-tabular text-[10px] font-bold">89–103</span>
-            <span className="text-[9px] font-medium mt-0.5 text-center leading-tight">
-              {lang === 'ar' ? 'أكتينيدات' : 'Ac–Lr'}
+            <span
+              dir={lang === 'ar' ? 'rtl' : 'ltr'}
+              className="text-[9px] font-medium mt-0.5 text-center leading-tight"
+            >
+              {t.actinidesShort}
             </span>
           </button>
 

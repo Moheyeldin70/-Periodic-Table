@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { ElementData, Language } from '../types/element';
 import { CATEGORY_META, STATE_META, UI_TEXT } from '../data/i18n';
+import { elementMatchesQuery, getElementName } from '../utils/localization';
 import { StateIcon } from './StateIcon';
 import { BohrModelSvg } from './BohrModelSvg';
 
@@ -74,17 +75,9 @@ const ElementPicker: React.FC<ElementPickerProps> = ({
   }, [open]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return elements;
-    return elements.filter(
-      (el) =>
-        String(el.number) === q ||
-        el.symbol.toLowerCase().includes(q) ||
-        el.enName.toLowerCase().includes(q) ||
-        el.latinName.toLowerCase().includes(q) ||
-        el.arName.includes(q)
-    );
-  }, [elements, query]);
+    if (!query.trim()) return elements;
+    return elements.filter((el) => elementMatchesQuery(el, query, lang));
+  }, [elements, query, lang]);
 
   const catMeta = CATEGORY_META[selected.category];
 
@@ -107,10 +100,10 @@ const ElementPicker: React.FC<ElementPickerProps> = ({
           </span>
           <div className="min-w-0">
             <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
-              {lang === 'ar' ? selected.arName : selected.enName}
+              {getElementName(selected, lang)}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono-tabular truncate">
-              #{selected.number} · {lang === 'ar' ? selected.enName : selected.arName}
+              #{selected.number} · {lang === 'en' ? selected.arName : selected.enName}
             </div>
           </div>
         </div>
@@ -178,11 +171,11 @@ const ElementPicker: React.FC<ElementPickerProps> = ({
                         {el.symbol}
                       </span>
                       <span className="truncate">
-                        {lang === 'ar' ? el.arName : el.enName}
+                        {getElementName(el, lang)}
                       </span>
                     </div>
                     <span className="text-[11px] text-slate-400 truncate shrink-0 max-w-[110px]">
-                      {lang === 'ar' ? el.enName : el.arName}
+                      {lang === 'en' ? el.arName : el.enName}
                     </span>
                   </button>
                 );
@@ -285,13 +278,13 @@ export const CompareView: React.FC<CompareViewProps> = ({
       a: (
         <span className={`inline-flex items-center gap-1.5 font-medium ${stateA.textClass}`}>
           <StateIcon state={elementA.state} className="w-3.5 h-3.5" />
-          <span>{lang === 'ar' ? stateA.ar : stateA.en}</span>
+          <span>{stateA.names[lang]}</span>
         </span>
       ),
       b: (
         <span className={`inline-flex items-center gap-1.5 font-medium ${stateB.textClass}`}>
           <StateIcon state={elementB.state} className="w-3.5 h-3.5" />
-          <span>{lang === 'ar' ? stateB.ar : stateB.en}</span>
+          <span>{stateB.names[lang]}</span>
         </span>
       ),
       diff:
@@ -303,13 +296,13 @@ export const CompareView: React.FC<CompareViewProps> = ({
       a: (
         <span className="inline-flex items-center gap-1.5">
           <span className={`w-2.5 h-2.5 rounded-sm shrink-0 ${catA.swatchClass}`} />
-          <span>{lang === 'ar' ? catA.ar : catA.en}</span>
+          <span>{catA.names[lang]}</span>
         </span>
       ),
       b: (
         <span className="inline-flex items-center gap-1.5">
           <span className={`w-2.5 h-2.5 rounded-sm shrink-0 ${catB.swatchClass}`} />
-          <span>{lang === 'ar' ? catB.ar : catB.en}</span>
+          <span>{catB.names[lang]}</span>
         </span>
       ),
       diff:
@@ -347,9 +340,7 @@ export const CompareView: React.FC<CompareViewProps> = ({
       label: t.electronConfig,
       a: <span dir="ltr" className="font-mono-tabular">{elementA.electronConfig}</span>,
       b: <span dir="ltr" className="font-mono-tabular">{elementB.electronConfig}</span>,
-      diff: `${elementA.shells.length} vs ${elementB.shells.length} ${
-        lang === 'ar' ? 'مدارات' : 'shells'
-      }`,
+      diff: `${elementA.shells.length} vs ${elementB.shells.length} ${t.compareShellsUnit}`,
       isMatch: elementA.shells.length === elementB.shells.length,
     },
     {
@@ -366,13 +357,9 @@ export const CompareView: React.FC<CompareViewProps> = ({
       ),
       diff:
         elementA.group === elementB.group
-          ? lang === 'ar'
-            ? 'نفس المجموعة'
-            : 'Same group'
+          ? t.compareSameGroup
           : elementA.period === elementB.period
-          ? lang === 'ar'
-            ? 'نفس الدورة'
-            : 'Same period'
+          ? t.compareSamePeriod
           : t.compareDifferent,
       isMatch: elementA.group === elementB.group || elementA.period === elementB.period,
     },
@@ -517,7 +504,7 @@ export const CompareView: React.FC<CompareViewProps> = ({
                 onClick={() => onInspectElement(el)}
                 dir="ltr"
                 className={`w-20 h-24 rounded-xl border p-2.5 flex flex-col justify-between shrink-0 cursor-pointer hover:shadow-sm transition-shadow ${cat.tileClasses}`}
-                title={lang === 'ar' ? el.arName : el.enName}
+                title={getElementName(el, lang)}
               >
                 <div className="flex items-center justify-between text-[11px] font-mono-tabular font-semibold">
                   <span>{el.number}</span>
@@ -542,19 +529,19 @@ export const CompareView: React.FC<CompareViewProps> = ({
                     aria-hidden="true"
                   />
                   <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 truncate">
-                    {lang === 'ar' ? el.arName : el.enName}
+                    {getElementName(el, lang)}
                   </h3>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {lang === 'ar' ? el.enName : el.arName} ·{' '}
+                  {lang === 'en' ? el.arName : el.enName} ·{' '}
                   <span className="italic">{el.latinName}</span>
                 </p>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600 dark:text-slate-300 pt-1">
-                  <span>{lang === 'ar' ? cat.ar : cat.en}</span>
+                  <span>{cat.names[lang]}</span>
                   <span aria-hidden="true">·</span>
                   <span className={`inline-flex items-center gap-1 font-medium ${state.textClass}`}>
                     <StateIcon state={el.state} className="w-3.5 h-3.5" />
-                    <span>{lang === 'ar' ? state.ar : state.en}</span>
+                    <span>{state.names[lang]}</span>
                   </span>
                 </div>
                 <button
@@ -562,7 +549,7 @@ export const CompareView: React.FC<CompareViewProps> = ({
                   onClick={() => onInspectElement(el)}
                   className="inline-flex items-center gap-1 text-xs font-medium text-sky-600 dark:text-sky-400 hover:underline pt-1 cursor-pointer"
                 >
-                  <span>{lang === 'ar' ? 'فتح البطاقة الكاملة' : 'Inspect full profile'}</span>
+                  <span>{t.compareInspectProfile}</span>
                   <ExternalLink className="w-3 h-3" />
                 </button>
               </div>
@@ -587,7 +574,7 @@ export const CompareView: React.FC<CompareViewProps> = ({
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            {lang === 'ar' ? 'المقارنة الكمية للخصائص الرئيسية' : 'Quantitative Metric Comparison'}
+            {t.compareQuantitativeTitle}
           </h3>
           <div className="flex items-center gap-4 text-xs">
             <span className="inline-flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
@@ -670,7 +657,7 @@ export const CompareView: React.FC<CompareViewProps> = ({
                   <span className="inline-flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-sky-600 dark:bg-sky-400" />
                     <span>
-                      {lang === 'ar' ? elementA.arName : elementA.enName} ({elementA.symbol})
+                      {getElementName(elementA, lang)} ({elementA.symbol})
                     </span>
                   </span>
                 </th>
@@ -678,7 +665,7 @@ export const CompareView: React.FC<CompareViewProps> = ({
                   <span className="inline-flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-amber-500 dark:bg-amber-400" />
                     <span>
-                      {lang === 'ar' ? elementB.arName : elementB.enName} ({elementB.symbol})
+                      {getElementName(elementB, lang)} ({elementB.symbol})
                     </span>
                   </span>
                 </th>

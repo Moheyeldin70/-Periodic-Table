@@ -1,6 +1,7 @@
 import React from 'react';
 import { ElementData, Language } from '../types/element';
 import { CATEGORY_META, STATE_META } from '../data/i18n';
+import { getElementName } from '../utils/localization';
 import { StateIcon } from './StateIcon';
 
 interface ElementTileProps {
@@ -22,7 +23,14 @@ export const ElementTile: React.FC<ElementTileProps> = ({
 }) => {
   const catMeta = CATEGORY_META[element.category];
   const stateMeta = STATE_META[element.state];
-  const displayName = lang === 'ar' ? element.arName : element.enName;
+  const displayName = getElementName(element, lang);
+  const stateName = stateMeta.names[lang];
+  const stateShort = stateMeta.shorts[lang];
+  const catName = catMeta.names[lang];
+  const tileTitle =
+    lang === 'en'
+      ? `${element.number}. ${element.enName} (${element.arName}) — ${element.latinName}`
+      : `${element.number}. ${displayName} (${element.enName}) — ${element.latinName}`;
 
   if (!compact) {
     // Card style for Grid / Index View
@@ -44,10 +52,10 @@ export const ElementTile: React.FC<ElementTileProps> = ({
           </span>
           <span
             className={`inline-flex items-center gap-1 text-[11px] font-medium ${stateMeta.textClass}`}
-            title={lang === 'ar' ? stateMeta.ar : stateMeta.en}
+            title={stateName}
           >
             <StateIcon state={element.state} className="w-3 h-3" />
-            <span>{lang === 'ar' ? stateMeta.ar : stateMeta.en}</span>
+            <span>{stateName}</span>
           </span>
         </div>
 
@@ -59,7 +67,7 @@ export const ElementTile: React.FC<ElementTileProps> = ({
         </div>
 
         <div className="flex items-center justify-between gap-2 text-[11px] opacity-75 w-full pt-2 border-t border-current/10">
-          <span className="truncate">{lang === 'ar' ? catMeta.ar : catMeta.en}</span>
+          <span className="truncate">{catName}</span>
           <span dir="ltr" className="font-mono-tabular shrink-0">
             {element.atomicMass}
           </span>
@@ -73,7 +81,7 @@ export const ElementTile: React.FC<ElementTileProps> = ({
     <button
       type="button"
       onClick={() => onSelect(element)}
-      title={`${element.number}. ${element.enName} (${element.arName}) — ${element.latinName}`}
+      title={tileTitle}
       style={{
         gridRowStart: element.gridRow,
         gridColumnStart: element.gridCol,
@@ -93,12 +101,10 @@ export const ElementTile: React.FC<ElementTileProps> = ({
         </span>
         <span
           className={`inline-flex items-center gap-0.5 text-[9px] font-bold ${stateMeta.textClass}`}
-          aria-label={lang === 'ar' ? stateMeta.ar : stateMeta.en}
+          aria-label={stateName}
         >
           <StateIcon state={element.state} className="w-2.5 h-2.5" />
-          <span className="hidden xl:inline">
-            {lang === 'ar' ? stateMeta.shortAr : stateMeta.shortEn}
-          </span>
+          <span className="hidden xl:inline">{stateShort}</span>
         </span>
       </div>
 

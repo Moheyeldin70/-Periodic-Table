@@ -1,4 +1,19 @@
-export type Language = 'en' | 'ar';
+export type Language =
+  | 'en'
+  | 'ar'
+  | 'ja'
+  | 'zh'
+  | 'fr'
+  | 'es'
+  | 'de'
+  | 'ru'
+  | 'pt'
+  | 'ko'
+  | 'it'
+  | 'hi';
+
+export type NonCoreLanguage = Exclude<Language, 'en' | 'ar'>;
+
 export type Theme = 'light' | 'dark';
 
 export type MatterState = 'solid' | 'liquid' | 'gas';
@@ -51,4 +66,28 @@ export interface ElementData {
   usesEn: string[];
   usesAr: string[];
   compounds: Compound[];
+}
+
+export type ElementLocaleTuple = [
+  etymology: string,
+  history: string,
+  uses: string[]
+];
+
+export type ElementLocaleMap = Record<number, ElementLocaleTuple>;
+
+export interface LocalizedCompound {
+  formula: string;
+  name: string;
+  secondaryName: string;
+}
+
+export interface LocalizedElement {
+  name: string;
+  secondaryName: string;
+  etymology: string;
+  discoveredBy: string;
+  history: string;
+  uses: string[];
+  compounds: LocalizedCompound[];
 }

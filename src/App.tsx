@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Search,
   Sun,
@@ -9,6 +9,8 @@ import {
   X,
   RotateCcw,
   ArrowLeftRight,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
 import { ALL_ELEMENTS } from './data/elements';
 import { CATEGORY_META, STATE_META, UI_TEXT } from './data/i18n';
@@ -19,6 +21,12 @@ import {
   MatterState,
   Theme,
 } from './types/element';
+import {
+  LANGUAGE_OPTIONS,
+  elementMatchesQuery,
+  getInitialLang,
+  getLanguageDir,
+} from './utils/localization';
 import { StateIcon } from './components/StateIcon';
 import { PeriodicTableView } from './components/PeriodicTableView';
 import { ElementModal } from './components/ElementModal';
@@ -49,19 +57,10 @@ function getInitialTheme(): Theme {
   return 'light';
 }
 
-function getInitialLang(): Language {
-  try {
-    const saved = localStorage.getItem('pt_lang');
-    if (saved === 'ar' || saved === 'en') return saved;
-  } catch {
-    // ignore storage errors
-  }
-  return 'en';
-}
-
 export default function App() {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
   const [lang, setLang] = useState<Language>(getInitialLang);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [stateFilter, setStateFilter] = useState<MatterState | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState<ElementCategory | 'all'>('all');
@@ -69,8 +68,11 @@ export default function App() {
   const [selectedElement, setSelectedElement] = useState<ElementData | null>(null);
   const [compareElementA, setCompareElementA] = useState<ElementData>(ALL_ELEMENTS[10]); // Na
   const [compareElementB, setCompareElementB] = useState<ElementData>(ALL_ELEMENTS[18]); // K
+  const langMenuRef = useRef<HTMLDivElement | null>(null);
 
   const t = UI_TEXT[lang];
+  const currentLangOption =
+    LANGUAGE_OPTIONS.find((opt) => opt.code === lang) ?? LANGUAGE_OPTIONS[0];
 
   // Sync dark mode class on <html>
   useEffect(() => {
@@ -91,13 +93,39 @@ export default function App() {
   useEffect(() => {
     const root = document.documentElement;
     root.lang = lang;
-    root.dir = lang === 'ar' ? 'rtl' : 'ltr';
-    try {
-      localStorage.setItem('pt_lang', lang);
-    } catch {
-      // ignore
-    }
+    root.dir = getLanguageDir(lang);
   }, [lang]);
+
+  // Close language dropdown on outside click or Escape
+  useEffect(() => {
+    if (!langMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(e.target as Node)) {
+        setLangMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setLangMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [langMenuOpen]);
+
+  const handleSelectLanguage = (nextLang: Language) => {
+    setLang(nextLang);
+    setLangMenuOpen(false);
+    try {
+      localStorage.setItem('pt_lang', nextLang);
+    } catch {
+      // ignore storage errors
+    }
+  };
 
   // Precompute counts per state and category
   const stateCounts = useMemo(() => {
@@ -119,28 +147,18 @@ export default function App() {
 
   // Filter logic
   const matchedNumbers = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
     const matched = new Set<number>();
 
     for (const el of ALL_ELEMENTS) {
       if (stateFilter !== 'all' && el.state !== stateFilter) continue;
       if (categoryFilter !== 'all' && el.category !== categoryFilter) continue;
-
-      if (q) {
-        const hit =
-          String(el.number) === q ||
-          el.symbol.toLowerCase().includes(q) ||
-          el.enName.toLowerCase().includes(q) ||
-          el.latinName.toLowerCase().includes(q) ||
-          el.arName.includes(q);
-        if (!hit) continue;
-      }
+      if (!elementMatchesQuery(el, searchQuery, lang)) continue;
 
       matched.add(el.number);
     }
 
     return matched;
-  }, [searchQuery, stateFilter, categoryFilter]);
+  }, [searchQuery, stateFilter, categoryFilter, lang]);
 
   const hasActiveFilter =
     searchQuery.trim() !== '' || stateFilter !== 'all' || categoryFilter !== 'all';
@@ -229,16 +247,61 @@ export default function App() {
 
           {/* Right Controls: Language & Theme */}
           <div className="flex items-center gap-2 shrink-0">
+            <div ref={langMenuRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setLangMenuOpen((prev) => !prev)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                aria-label={t.languageLabel}
+                aria-haspopup="listbox"
+                aria-expanded={langMenuOpen}
+              >
+                <Languages className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
+                <span className="hidden sm:inline">{currentLangOption.nativeName}</span>
+                <span className="sm:hidden">{currentLangOption.shortCode}</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
+                    langMenuOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setLang((prev) => (prev === 'en' ? 'ar' : 'en'))}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-              aria-label="Switch language"
-            >
-              <Languages className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-              <span>{t.switchLang}</span>
-            </button>
+              {langMenuOpen && (
+                <div
+                  role="listbox"
+                  aria-label={t.languageLabel}
+                  className={`absolute top-full mt-2 w-52 max-h-80 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl py-1 z-40 ${
+                    lang === 'ar' ? 'left-0' : 'right-0'
+                  }`}
+                >
+                  {LANGUAGE_OPTIONS.map((opt) => {
+                    const active = opt.code === lang;
+                    return (
+                      <button
+                        key={opt.code}
+                        type="button"
+                        role="option"
+                        aria-selected={active}
+                        onClick={() => handleSelectLanguage(opt.code)}
+                        className={`w-full flex items-center justify-between gap-3 px-3.5 py-2 text-xs transition-colors cursor-pointer text-start ${
+                          active
+                            ? 'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 font-semibold'
+                            : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/70'
+                        }`}
+                      >
+                        <span className="truncate">{opt.nativeName}</span>
+                        <span className="inline-flex items-center gap-1.5 shrink-0">
+                          <span className="font-mono-tabular text-[10px] opacity-60">
+                            {opt.shortCode}
+                          </span>
+                          {active && <Check className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             <button
               type="button"
@@ -387,7 +450,7 @@ export default function App() {
                           }`}
                         >
                           <StateIcon state={st} className={`w-3.5 h-3.5 ${meta.textClass}`} />
-                          <span>{lang === 'ar' ? meta.ar : meta.en}</span>
+                          <span>{meta.names[lang]}</span>
                           <span className="font-mono-tabular text-[11px] opacity-60">
                             {stateCounts[st]}
                           </span>
@@ -430,7 +493,7 @@ export default function App() {
                         className={`w-2.5 h-2.5 rounded-sm shrink-0 ${meta.swatchClass}`}
                         aria-hidden="true"
                       />
-                      <span>{lang === 'ar' ? meta.ar : meta.en}</span>
+                      <span>{meta.names[lang]}</span>
                       <span className="font-mono-tabular text-[11px] opacity-60">
                         {categoryCounts[catId]}
                       </span>
@@ -486,11 +549,7 @@ export default function App() {
       <footer className="border-t border-slate-200 dark:border-slate-800/80 py-4 mt-6">
         <div className="max-w-[1520px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
           <span>{t.appSubtitle}</span>
-          <span>
-            {lang === 'ar'
-              ? 'اضغط على أي عنصر لعرض التسمية اللاتينية، أصل الرمز، المركبات، التاريخ، والاستخدامات.'
-              : 'Click any element to inspect its Latin etymology, top 10 compounds, discovery history, and uses.'}
-          </span>
+          <span>{t.footerHint}</span>
         </div>
       </footer>
 
